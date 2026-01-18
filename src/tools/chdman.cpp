@@ -969,8 +969,21 @@ static void progress(bool forceit, Format &&fmt, Params &&...args)
 	lastprogress = curtime;
 
 	// standard vfprintf stuff here
+#ifdef __EMSCRIPTEN__
+	std::string msg = string_format(std::forward<Format>(fmt), std::forward<Params>(args)...);
+	for (char &ch : msg)
+	{
+		if (ch == '\r')
+			ch = '\n';
+	}
+	std::cerr << msg;
+	if (msg.find('\n') == std::string::npos)
+		std::cerr << '\n';
+	std::cerr << std::flush;
+#else
 	util::stream_format(std::cerr, std::forward<Format>(fmt), std::forward<Params>(args)...);
 	std::cerr << std::flush;
+#endif
 }
 
 
