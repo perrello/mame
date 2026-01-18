@@ -1098,21 +1098,29 @@ if not toolchain(MAME_BUILD_DIR, subdir) then
 	return -- no action specified
 end
 
+local use_pthreads = (os.getenv("SINGLE_THREAD") ~= "1")
+
 configuration { "asmjs" }
 	buildoptions {
 		"-std=gnu89",
 		"-Wno-implicit-function-declaration",
 		"-s USE_SDL_TTF=2",
-		"-pthread",
-		"-matomics",
-		"-mbulk-memory",
 	}
 	buildoptions_cpp {
 		"-std=c++17",
-		"-pthread",
-		"-matomics",
-		"-mbulk-memory",
 	}
+	if use_pthreads then
+		buildoptions {
+			"-pthread",
+			"-matomics",
+			"-mbulk-memory",
+		}
+		buildoptions_cpp {
+			"-pthread",
+			"-matomics",
+			"-mbulk-memory",
+		}
+	end
 	if _OPTIONS["with-emulator"] then
 		buildoptions_cpp {
 			"-s EXCEPTION_CATCHING_ALLOWED=\"['_ZN15running_machine17start_all_devicesEv','_ZN12cli_frontend7executeEiPPc','_ZN8chd_file11open_commonEb','_ZN8chd_file13read_metadataEjjRNSt3__212basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEE','_ZN8chd_file13read_metadataEjjRNSt3__26vectorIhNS0_9allocatorIhEEEE','_ZNK19netlist_mame_device19base_validity_checkER16validity_checker']\"",
@@ -1124,9 +1132,13 @@ configuration { "asmjs" }
 		}
 	end
 	defines {
-		"ASIO_HAS_PTHREADS",
 		"SOUND_DISABLE_THREADING",
 	}
+	if use_pthreads then
+		defines {
+			"ASIO_HAS_PTHREADS",
+		}
+	end
 	linkoptions {
 		"-Wl,--start-group",
 		"-s USE_SDL=2",
@@ -1159,10 +1171,14 @@ configuration { "asmjs" }
 			"-s SUPPORT_LONGJMP=1",
 			"-s EXCEPTION_DEBUG=1",
 			"-s EXPORTED_RUNTIME_METHODS=\"['callMain','getExceptionMessage','FS']\"",
-			"-s USE_PTHREADS=1",
-			"-s PTHREAD_POOL_SIZE=4",
-			"-s PROXY_TO_PTHREAD=1",
 		}
+		if use_pthreads then
+			linkoptions {
+				"-s USE_PTHREADS=1",
+				"-s PTHREAD_POOL_SIZE=4",
+				"-s PROXY_TO_PTHREAD=1",
+			}
+		end
 	end
 	if _OPTIONS["OPTIMIZE"]~=nil then
 		if _OPTIONS["OPTIMIZE"]=="3" then
