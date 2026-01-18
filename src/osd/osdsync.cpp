@@ -88,8 +88,15 @@ static void spin_while_not(const volatile _AtomType * volatile atom, const _Main
 int osd_get_num_processors(bool heavy_mt)
 {
 #if defined(SDLMAME_EMSCRIPTEN)
+#if defined(__EMSCRIPTEN_PTHREADS__)
+	unsigned int threads = std::thread::hardware_concurrency();
+	if (threads == 0)
+		threads = 2;
+	return heavy_mt ? threads : std::min(threads, 4U);
+#else
 	// multithreading is not supported at this time
 	return 1;
+#endif
 #else
 	unsigned int threads = std::thread::hardware_concurrency();
 	// max out at 4 for now since scaling above that seems to do poorly
@@ -275,8 +282,8 @@ osd_work_queue *osd_work_queue_alloc(int flags)
 	if (osdworkqueuemaxthreads != nullptr && sscanf(osdworkqueuemaxthreads, "%d", &osdthreadnum) == 1 && threadnum > osdthreadnum)
 		threadnum = osdthreadnum;
 
-#if defined(SDLMAME_EMSCRIPTEN)
-	// threads are not supported at all
+#if defined(SDLMAME_EMSCRIPTEN) && !defined(__EMSCRIPTEN_PTHREADS__)
+	// threads are not supported without pthreads enabled
 	threadnum = 0;
 #endif
 

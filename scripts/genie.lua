@@ -1103,9 +1103,15 @@ configuration { "asmjs" }
 		"-std=gnu89",
 		"-Wno-implicit-function-declaration",
 		"-s USE_SDL_TTF=2",
+		"-pthread",
+		"-matomics",
+		"-mbulk-memory",
 	}
 	buildoptions_cpp {
 		"-std=c++17",
+		"-pthread",
+		"-matomics",
+		"-mbulk-memory",
 	}
 	if _OPTIONS["with-emulator"] then
 		buildoptions_cpp {
@@ -1153,6 +1159,9 @@ configuration { "asmjs" }
 			"-s SUPPORT_LONGJMP=1",
 			"-s EXCEPTION_DEBUG=1",
 			"-s EXPORTED_RUNTIME_METHODS=\"['callMain','getExceptionMessage','FS']\"",
+			"-s USE_PTHREADS=1",
+			"-s PTHREAD_POOL_SIZE=4",
+			"-s PROXY_TO_PTHREAD=1",
 		}
 	end
 	if _OPTIONS["OPTIMIZE"]~=nil then
