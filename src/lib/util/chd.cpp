@@ -3250,20 +3250,47 @@ void *chd_file_compressor::async_compress_hunk_static(void *param, int threadid)
 
 void chd_file_compressor::async_compress_hunk(work_item &item, int threadid)
 {
-	// use our thread's codec
-	assert(threadid < std::size(m_codecs));
-	item.m_codecs = m_codecs[threadid];
+	try
+	{
+		// use our thread's codec
+		assert(threadid < std::size(m_codecs));
+		item.m_codecs = m_codecs[threadid];
 
-	// compute CRC-16 and SHA-1 hashes
-	item.m_hash[0].m_crc16 = util::crc16_creator::simple(item.m_data, hunk_bytes());
-	item.m_hash[0].m_sha1 = util::sha1_creator::simple(item.m_data, hunk_bytes());
+		// compute CRC-16 and SHA-1 hashes
+		item.m_hash[0].m_crc16 = util::crc16_creator::simple(item.m_data, hunk_bytes());
+		item.m_hash[0].m_sha1 = util::sha1_creator::simple(item.m_data, hunk_bytes());
 
-	// find the best compression scheme, unless we already have a self or parent match
-	// (note we may miss a self match from blocks not yet added, but this just results in extra work)
-	// TODO: data race
-	if ((m_current_map.find(item.m_hash[0].m_crc16, item.m_hash[0].m_sha1) == hashmap::NOT_FOUND) &&
-			(m_parent_map.find(item.m_hash[0].m_crc16, item.m_hash[0].m_sha1) == hashmap::NOT_FOUND))
-		item.m_compression = item.m_codecs->find_best_compressor(item.m_data, item.m_compressed, item.m_complen);
+		// find the best compression scheme, unless we already have a self or parent match
+		// (note we may miss a self match from blocks not yet added, but this just results in extra work)
+		// TODO: data race
+		if ((m_current_map.find(item.m_hash[0].m_crc16, item.m_hash[0].m_sha1) == hashmap::NOT_FOUND) &&
+				(m_parent_map.find(item.m_hash[0].m_crc16, item.m_hash[0].m_sha1) == hashmap::NOT_FOUND))
+			item.m_compression = item.m_codecs->find_best_compressor(item.m_data, item.m_compressed, item.m_complen);
+	}
+	catch (std::error_condition const &err)
+	{
+		if (err == chd_file::error::COMPRESSION_ERROR)
+		{
+			item.m_compression = -1;
+			item.m_complen = hunk_bytes();
+			std::memcpy(item.m_compressed, item.m_data, hunk_bytes());
+		}
+		else
+		{
+			fprintf(stderr, "CHD error occurred: %s\n", err.message().c_str());
+			m_read_error = err;
+		}
+	}
+	catch (std::exception const &ex)
+	{
+		fprintf(stderr, "exception occurred: %s\n", ex.what());
+		m_read_error = std::errc::io_error; // TODO: revisit this error code
+	}
+	catch (...)
+	{
+		fprintf(stderr, "unknown exception occurred during compression\n");
+		m_read_error = std::errc::io_error; // TODO: revisit this error code
+	}
 
 	// mark us complete
 	item.m_status = WS_COMPLETE;
@@ -3367,6 +3394,11 @@ void chd_file_compressor::async_read()
 	catch (std::exception const &ex)
 	{
 		fprintf(stderr, "exception occurred: %s\n", ex.what());
+		m_read_error = std::errc::io_error; // TODO: revisit this error code
+	}
+	catch (...)
+	{
+		fprintf(stderr, "unknown exception occurred during read/compress\n");
 		m_read_error = std::errc::io_error; // TODO: revisit this error code
 	}
 }

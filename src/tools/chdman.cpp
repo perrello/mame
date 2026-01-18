@@ -3534,6 +3534,11 @@ int CLIB_DECL main(int argc, char *argv[])
 				util::stream_format(std::cerr, "Unhandled exception: %s\n", ex.what());
 				return 1;
 			}
+			catch (...)
+			{
+				util::stream_format(std::cerr, "Unhandled non-std exception\n");
+				return 1;
+			}
 		}
 	}
 

@@ -1059,7 +1059,12 @@ chd_zstd_compressor::~chd_zstd_compressor()
 uint32_t chd_zstd_compressor::compress(const uint8_t *src, uint32_t srclen, uint8_t *dest)
 {
 	// reset the compressor
-	auto result = ZSTD_initCStream(m_stream, ZSTD_maxCLevel());
+	int level = ZSTD_maxCLevel();
+#ifdef __EMSCRIPTEN__
+	if (level > 10)
+		level = 10;
+#endif
+	auto result = ZSTD_initCStream(m_stream, level);
 	if (ZSTD_isError(result))
 		throw std::error_condition(chd_file::error::COMPRESSION_ERROR);
 
