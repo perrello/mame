@@ -1164,19 +1164,18 @@ configuration { "asmjs" }
 	else
 		linkoptions {
 			"-s DISABLE_EXCEPTION_CATCHING=0",
-			"-s ASSERTIONS=2",
-			"-s SAFE_HEAP=1",
-			"-s STACK_OVERFLOW_CHECK=2",
-			"-s DEMANGLE_SUPPORT=1",
+			"-s ASSERTIONS=0",
+			"-s SAFE_HEAP=0",
+			"-s STACK_OVERFLOW_CHECK=0",
+			"-s DEMANGLE_SUPPORT=0",
 			"-s SUPPORT_LONGJMP=1",
-			"-s EXCEPTION_DEBUG=1",
 			"-s EXPORTED_RUNTIME_METHODS=\"['callMain','getExceptionMessage','FS']\"",
+			"-lworkerfs.js",
 		}
 		if use_pthreads then
 			linkoptions {
 				"-s USE_PTHREADS=1",
-				"-s PTHREAD_POOL_SIZE=4",
-				"-s PROXY_TO_PTHREAD=1",
+				"-s PTHREAD_POOL_SIZE=8",
 			}
 		end
 	end
@@ -1216,7 +1215,7 @@ configuration { "asmjs" }
 	else
 		linkoptions {
 			"-s ALLOW_MEMORY_GROWTH=1",
-			"-s INITIAL_MEMORY=24MB"
+			"-s INITIAL_MEMORY=32MB"
 		}
 	end
 	archivesplit_size "20"

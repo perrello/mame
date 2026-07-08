@@ -1061,8 +1061,7 @@ uint32_t chd_zstd_compressor::compress(const uint8_t *src, uint32_t srclen, uint
 	// reset the compressor
 	int level = ZSTD_maxCLevel();
 #ifdef __EMSCRIPTEN__
-	if (level > 10)
-		level = 10;
+	level = 3;
 #endif
 	auto result = ZSTD_initCStream(m_stream, level);
 	if (ZSTD_isError(result))

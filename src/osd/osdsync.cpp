@@ -287,6 +287,16 @@ osd_work_queue *osd_work_queue_alloc(int flags)
 	threadnum = 0;
 #endif
 
+#if defined(SDLMAME_EMSCRIPTEN) && defined(__EMSCRIPTEN_PTHREADS__)
+	// Emscripten filesystem calls from pthread workers are proxied back to the
+	// main runtime thread. CHD's read queue performs input file reads, while the
+	// main runtime thread waits for that queue to complete. Running this queue on
+	// pthread workers can deadlock before compression starts. Keep input reads on
+	// the main runtime thread, but allow compression work queues to use pthreads.
+	if (flags & WORK_QUEUE_FLAG_IO)
+		threadnum = 0;
+#endif
+
 	// clamp to the maximum
 	queue->threads = std::min(threadnum, WORK_MAX_THREADS);
 
